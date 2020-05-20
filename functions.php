@@ -1,7 +1,8 @@
 <?php
 
 require __DIR__ . "/rakutensim-api.php";
-const TABLE_TEMPLATE = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
+//const TABLE_TEMPLATE = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
+const TABLE_TEMPLATE  = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
 
 
 function get_series_buttons($atts, $content) {
@@ -78,17 +79,48 @@ function get_count_by_device_table() {
 </form>
 EOM;
 
+	$css_d  = 'style="border-style: none;"';
+	
+	$n = 0;
 	$trs = '';
   $items = countReports($seriesId);
 	foreach ($items as $item) {
     $button=sprintf($form, $seriesId, $item["device_id"], $item["device_name"]
 		,	$item["device_id"] == $deviceId ? "": "#cccccc");
-		$trs .= sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
-		, $button, $item["yes"], $item["no"]);
+//		$trs .= sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+//		, $button, $item["yes"], $item["no"]);
+	if($item["yes"]+$item["no"]){
+		$mult = 100/($item["yes"]+$item["no"]);
+		$yes_m = $item["yes"]*$mult;
+		$no_m = $item["no"]*$mult;
+	}else{
+		$yes_m = 0;
+		$no_m = 0;
+	}
+	
+	$tgl = $n % 2;
+	if($tgl){
+  $gchart = <<<EOM
+<img src="https://chart.apis.google.com/chart?chs=600x60&amp;chd=t:{$yes_m}|{$no_m}&amp;cht=bhs&amp;chco=98CB00,CB3200&amp;chxt=x" />
+EOM;
+	}else{
+  $gchart = <<<EOM
+<img src="https://chart.apis.google.com/chart?chs=600x60&amp;chd=t:{$yes_m}|{$no_m}&amp;cht=bhs&amp;chco=98CB00,CB3200&amp;chxt=x&chf=bg,s,fafbfc|c,s,fafbfc" />
+EOM;
+	}
+	$n = $n + 1;
+
+		$trs .= sprintf("<tr class=\"test\"><td $css_d>%s</td><td $css_d colspan=\"2\">%s</td></tr>"
+		, $button, $gchart);
 	}
 	unset($item);
 
-	$ths = "<tr><th>device_name</th><th>yes</th><th>no</th></tr>";
+//	$ths = "<tr><th>device_name</th><th>yes</th><th>no</th></tr>";
+//	$table = sprintf(TABLE_TEMPLATE, "", "block", $ths, $trs);
+	$Yes = '<span style="color: #98cb00;">■</span>Yes';
+	$No  = '<span style="color: #cb3200;">■</span>No';
+
+	$ths = "<tr><th $css_d>機種名</th><th $css_d colspan=\"2\">比率 ( $Yes / $No )</th></tr>";
 	$table = sprintf(TABLE_TEMPLATE, "", "block", $ths, $trs);
 
   return $table;
