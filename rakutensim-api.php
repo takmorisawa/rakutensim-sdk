@@ -1,6 +1,6 @@
 <?php
 
-const BASE_URL = 'http://18.216.105.170/api/';
+const BASE_URL = 'https://moricreate.com/api/';
 
 function request($url, $method = 'GET', $query = NULL) {
     $username="tak";
