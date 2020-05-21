@@ -74,5 +74,10 @@ function countReports($seriesId) {
  * @return {Object} 使用可否別のコメント情報の配列
  */
 function getReports($deviceId) {
-  return request(BASE_URL."devices/".$deviceId . "/get_related_comments/");
+  $items = request(BASE_URL."rakutensim/reports/?authorized=True&device=".$deviceId);
+  $yesItems = array_filter($items, function($item) { return $item["usable"]; });
+  $noItems = array_filter($items, function($item) { return !$item["usable"]; });
+  return array(
+    "yes" => $yesItems,
+    "no" => $noItems);
 }
