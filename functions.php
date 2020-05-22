@@ -2,7 +2,8 @@
 
 require __DIR__ . "/rakutensim-api.php";
 //const TABLE_TEMPLATE = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
-const TABLE_TEMPLATE  = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
+const TABLE_TEMPLATE = "<table id=%s style='display:%s;'><thead>%s</thead><tbody>%s<tbody></table>";
+const TWITTER_TEMPLATE = "<div id=%s style='display:%s;'>%s</div>";
 
 
 function get_series_buttons($atts, $content) {
@@ -126,6 +127,73 @@ EOM;
   return $table;
 }
 add_shortcode('get_count_by_device_table', 'get_count_by_device_table');
+
+
+function get_report_twitter() {
+
+	$seriesId = 1;
+	$deviceId = 1;
+
+	if ($_SERVER['REQUEST_METHOD'] === 'POST'){
+		$seriesId = $_POST["series_id"];
+    if (isset($_POST["device_id"])){
+      $deviceId = $_POST["device_id"];
+    }
+    else {
+      $devices=getDevices($seriesId);
+      $deviceId=$devices[0]["id"];
+    }
+	}
+
+	$create_table = function($id, $display, $arg) {
+//		$trs = '';
+		$twt = '';
+		foreach ($arg as $item) {
+//			$trs .= sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+//			, $item["user_id"], $item["date"], $item["comment"]);
+
+			if ($item["user_id"] == 'Twitter'){
+				$twt .= $item["comment"];
+			}
+		}
+		unset($item);
+
+//		$ths = "<tr><th>user_id</th><th>date</th><th>comment</th></tr>";
+//		$table = sprintf(TABLE_TEMPLATE, $id, $display, $ths, $trs);
+		$twitter = sprintf(TWITTER_TEMPLATE, $id, $display, $twt);
+
+//	  return $table;
+	  return $twitter;
+	};
+
+  $script = <<<EOM
+<script type="text/javascript">
+  function onClickSwitchDisplay(isYes){
+    const tblYes = document.getElementById("yes_table");
+    const tblNo = document.getElementById("no_table");
+    const btnYes = document.getElementById("yes_button");
+    const btnNo = document.getElementById("no_button");
+    tblYes.style.display= isYes? "block" : "none";
+    tblNo.style.display= isYes? "none" : "block";
+    btnYes.style.backgroundColor= isYes ? "" : "#cccccc";
+    btnNo.style.backgroundColor= isYes ? "#cccccc" : "";
+  }
+</script>
+<form>
+  <input type="button" id="yes_button" value="yes" onclick="onClickSwitchDisplay(true)">
+  <input type="button" id="no_button" value="no" onclick="onClickSwitchDisplay(false)" style="background-color:#cccccc">
+</form>
+EOM;
+
+  $items = getReports($deviceId);
+	$yes_table = $create_table("yes_table", "block", $items["yes"]);
+	$no_table = $create_table("no_table", "none", $items["no"]);
+
+	$ret = $script . $yes_table	. $no_table;
+
+  return $ret;
+}
+add_shortcode('get_report_twitter', 'get_report_twitter');
 
 
 function get_report_table() {
