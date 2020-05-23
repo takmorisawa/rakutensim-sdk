@@ -73,21 +73,17 @@ function get_count_by_device_table() {
 	}
 
   $form = <<<EOM
-<form class="" method="post">
-  <input type="hidden" name="series_id" value="%d">
-  <input type="hidden" name="device_id" value="%d">
-	<input type="submit" value="%s" style="background-color:%s;">
-</form>
+<label><input name="radio_device" type="radio" onclick="onClickSwitchDevice(%d)" %s>%s</label>
 EOM;
 
 	$css_d  = 'style="border-style: none;"';
-	
+
 	$n = 0;
 	$trs = '';
   $items = countReports($seriesId);
 	foreach ($items as $item) {
-    $button=sprintf($form, $seriesId, $item["device_id"], $item["device_name"]
-		,	$item["device_id"] == $deviceId ? "": "#cccccc");
+    $button=sprintf($form, $item["device_id"],
+      $item == $items[0] ? "checked" : "", $item["device_name"]);
 //		$trs .= sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
 //		, $button, $item["yes"], $item["no"]);
 	if($item["yes"]+$item["no"]){
@@ -98,7 +94,7 @@ EOM;
 		$yes_m = 0;
 		$no_m = 0;
 	}
-	
+
 	$tgl = $n % 2;
 	if($tgl){
   $gchart = <<<EOM
@@ -124,26 +120,42 @@ EOM;
 	$ths = "<tr><th $css_d>機種名</th><th $css_d colspan=\"2\">比率 ( $Yes / $No )</th></tr>";
 	$table = sprintf(TABLE_TEMPLATE, "", "block", $ths, $trs);
 
+
+  // get_report_twitterを結合
+  $table .= "<dev id='comment_container'>";
+  foreach ($items as $item) {
+    $id = $item["device_id"];
+    $table .= "<dev id='comment_$id' style='display:none'>" . get_report_twitter($seriesId, $id) . "</dev>";
+  }
+  $table .= "</dev>";
+
+
+  // 機種別コメント切替スクリプトを結合
+  $table .= <<<EOM
+<script type="text/javascript">
+  function onClickSwitchDevice(deviceId){
+
+    const container = document.getElementById("comment_container");
+    const comments = container.children;
+    for (var i = 0; i < comments.length; i++) {
+      comments[i].style.display = "none";
+    }
+
+    const comment = document.getElementById("comment_" + deviceId);
+    comment.style.display= "block";
+  }
+</script>
+<script type="text/javascript">
+  onClickSwitchDevice($deviceId);
+</script>
+EOM;
+
   return $table;
 }
 add_shortcode('get_count_by_device_table', 'get_count_by_device_table');
 
 
-function get_report_twitter() {
-
-	$seriesId = 1;
-	$deviceId = 1;
-
-	if ($_SERVER['REQUEST_METHOD'] === 'POST'){
-		$seriesId = $_POST["series_id"];
-    if (isset($_POST["device_id"])){
-      $deviceId = $_POST["device_id"];
-    }
-    else {
-      $devices=getDevices($seriesId);
-      $deviceId=$devices[0]["id"];
-    }
-	}
+function get_report_twitter($seriesId, $deviceId) {
 
 	$create_table = function($id, $display, $arg) {
 //		$trs = '';
@@ -171,17 +183,13 @@ function get_report_twitter() {
   function onClickSwitchDisplay(isYes){
     const tblYes = document.getElementById("yes_table");
     const tblNo = document.getElementById("no_table");
-    const btnYes = document.getElementById("yes_button");
-    const btnNo = document.getElementById("no_button");
     tblYes.style.display= isYes? "block" : "none";
     tblNo.style.display= isYes? "none" : "block";
-    btnYes.style.backgroundColor= isYes ? "" : "#cccccc";
-    btnNo.style.backgroundColor= isYes ? "#cccccc" : "";
   }
 </script>
 <form>
-  <input type="button" id="yes_button" value="yes" onclick="onClickSwitchDisplay(true)">
-  <input type="button" id="no_button" value="no" onclick="onClickSwitchDisplay(false)" style="background-color:#cccccc">
+  <label><input type=radio name="radio_yesno" onclick="onClickSwitchDisplay(true)" checked>yes</label>
+  <label><input type="radio" name="radio_yesno" onclick="onClickSwitchDisplay(false)">no</label>
 </form>
 EOM;
 
